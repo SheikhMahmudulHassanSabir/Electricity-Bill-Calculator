@@ -1,0 +1,101 @@
+.history-page {
+  display: grid;
+  gap: 20px;
+}
+
+.history-header h1 {
+  font-size: clamp(1.4rem, 3vw, 1.85rem);
+}
+
+.history-header p {
+  margin: 4px 0 0;
+  color: var(--ink-2);
+}
+
+.history-filters {
+  padding: 16px 20px;
+}
+
+.filter-fields {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.filter-fields .field {
+  min-width: 180px;
+}
+
+.history-table-wrap {
+  padding-top: 12px;
+}
+
+.selected-row {
+  background: var(--green-wash);
+}
+
+.saved-by-cell {
+  font-family: var(--font-body);
+  color: var(--ink-2);
+}
+
+.actions-cell {
+  text-align: right;
+}
+
+.row-btns {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.inline-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.confirm-label {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.btn-sm {
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 0.82rem;
+}
+
+.btn.icon.btn-sm {
+  width: 34px;
+  padding: 0;
+}
+
+.history-detail-section {
+  margin-top: 8px;
+}
+
+.detail-banner {
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.detail-banner h2 {
+  font-size: 1.15rem;
+}
+
+.detail-banner p {
+  margin: 4px 0 0;
+  font-size: 0.88rem;
+  color: var(--ink-2);
+}

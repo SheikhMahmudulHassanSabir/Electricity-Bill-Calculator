@@ -1,0 +1,242 @@
+{
+  "entities": {
+    "Profile": {
+      "title": "Profile",
+      "description": "Public profile information for a registered user.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "full_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "full_name", "created_at"]
+    },
+    "Workspace": {
+      "title": "Workspace",
+      "description": "A shared workspace representing a home, flat, or building with shared meters and billing rate.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "rate_per_unit": {
+          "type": "number"
+        },
+        "invite_code": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 32,
+          "pattern": "^[A-Z0-9\\-]+$"
+        },
+        "created_by": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "name", "invite_code", "created_by", "created_at"]
+    },
+    "WorkspaceMember": {
+      "title": "WorkspaceMember",
+      "description": "Membership record linking a user to a workspace with a role.",
+      "type": "object",
+      "properties": {
+        "workspace_id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "user_id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "full_name": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "role": {
+          "type": "string",
+          "enum": ["owner", "member"]
+        },
+        "joined_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["workspace_id", "user_id", "role", "joined_at"]
+    },
+    "Meter": {
+      "title": "Meter",
+      "description": "An electricity meter within a workspace.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "workspace_id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "initial_reading": {
+          "type": "number"
+        },
+        "sort_order": {
+          "type": "number"
+        },
+        "is_active": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "workspace_id", "name", "initial_reading", "sort_order", "is_active", "created_at"]
+    },
+    "Bill": {
+      "title": "Bill",
+      "description": "A saved electricity bill snapshot for a workspace.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "workspace_id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "bill_date": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "rate_per_unit": {
+          "type": "number"
+        },
+        "total_units": {
+          "type": "number"
+        },
+        "total_amount": {
+          "type": "number"
+        },
+        "created_by": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "created_by_name": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "workspace_id", "bill_date", "rate_per_unit", "total_units", "total_amount", "created_by", "created_at"]
+    },
+    "BillItem": {
+      "title": "BillItem",
+      "description": "An individual meter reading and charge snapshot inside a saved bill.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "bill_id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "workspace_id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "meter_id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "meter_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "previous_reading": {
+          "type": "number"
+        },
+        "current_reading": {
+          "type": "number"
+        },
+        "units": {
+          "type": "number"
+        },
+        "amount": {
+          "type": "number"
+        }
+      },
+      "required": ["id", "bill_id", "workspace_id", "meter_name", "previous_reading", "current_reading", "units", "amount"]
+    }
+  },
+  "firestore": {
+    "/profiles/{userId}": {
+      "schema": { "$ref": "#/entities/Profile" },
+      "description": "Public profile record for a user."
+    },
+    "/workspaces/{workspaceId}": {
+      "schema": { "$ref": "#/entities/Workspace" },
+      "description": "Shared workspace document."
+    },
+    "/workspaces/{workspaceId}/members/{userId}": {
+      "schema": { "$ref": "#/entities/WorkspaceMember" },
+      "description": "Membership record for a workspace."
+    },
+    "/workspaces/{workspaceId}/meters/{meterId}": {
+      "schema": { "$ref": "#/entities/Meter" },
+      "description": "Electricity meter document belonging to a workspace."
+    },
+    "/workspaces/{workspaceId}/bills/{billId}": {
+      "schema": { "$ref": "#/entities/Bill" },
+      "description": "Saved bill header belonging to a workspace."
+    },
+    "/workspaces/{workspaceId}/bills/{billId}/items/{itemId}": {
+      "schema": { "$ref": "#/entities/BillItem" },
+      "description": "Saved bill line item for a meter."
+    }
+  }
+}

@@ -1,0 +1,58 @@
+.members-page {
+  display: grid;
+  gap: 20px;
+}
+
+.members-intro h1 {
+  font-size: clamp(1.4rem, 3vw, 1.85rem);
+}
+
+.members-intro p {
+  margin: 4px 0 0;
+  color: var(--ink-2);
+  max-width: 68ch;
+}
+
+.invite-box-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.invite-code-display {
+  font-family: var(--font-mono);
+  font-size: 1.45rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  padding: 10px 18px;
+  border-radius: var(--r-field);
+  border: 1px dashed var(--border-input);
+  background: var(--surface-subtle);
+  color: var(--ink);
+}
+
+.invite-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.members-table-wrap {
+  padding-top: 12px;
+}
+
+.role-cell {
+  font-family: var(--font-mono);
+  text-transform: capitalize;
+  text-align: right;
+}
+
+.muted-dash {
+  color: var(--ink-3);
+}
+
+.danger-zone {
+  border-color: #f3c6c2;
+}

@@ -1,0 +1,93 @@
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 18px 20px 0;
+}
+
+.tile {
+  border: 1px solid var(--line);
+  border-radius: var(--r-inner);
+  padding: 12px 14px;
+  background: var(--surface-subtle);
+}
+
+.tile small {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
+.tile b {
+  display: block;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 1.15rem;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.grand {
+  margin: 16px 20px 0;
+  border-radius: 14px;
+  background: var(--green);
+  color: #fff;
+  padding: 18px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.grand span {
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  opacity: 0.92;
+}
+
+.grand strong {
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.note {
+  padding: 0 20px 18px;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 900px) {
+  .tiles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .tiles {
+    grid-template-columns: minmax(0, 1fr);
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .grand {
+    margin-left: 14px;
+    margin-right: 14px;
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .note {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}

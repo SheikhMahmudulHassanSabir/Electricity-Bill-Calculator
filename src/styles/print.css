@@ -1,0 +1,96 @@
+.print-head {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 14mm;
+  }
+
+  body {
+    background: #fff;
+    padding: 0;
+    font-size: 12px;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .view-off {
+    display: none !important;
+  }
+
+  .print-head {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 2px solid #000;
+    padding-bottom: 10px;
+    margin-bottom: 16px;
+  }
+
+  .print-head h2 {
+    font-size: 20px;
+  }
+
+  .print-head span {
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+
+  .panel {
+    box-shadow: none;
+  }
+
+  #results {
+    margin-top: 0;
+  }
+
+  body[data-print="individual"] #viewIndividual {
+    display: block !important;
+  }
+
+  body[data-print="individual"] #viewCombined {
+    display: none !important;
+  }
+
+  body[data-print="combined"] #viewCombined {
+    display: block !important;
+  }
+
+  body[data-print="combined"] #viewIndividual {
+    display: none !important;
+  }
+
+  .bill-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bill {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .waiting {
+    display: none !important;
+  }
+
+  .dial,
+  .pay,
+  .grand,
+  .tile,
+  th,
+  tfoot td {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .table-scroll {
+    overflow: visible;
+  }
+
+  table {
+    min-width: 0;
+  }
+}

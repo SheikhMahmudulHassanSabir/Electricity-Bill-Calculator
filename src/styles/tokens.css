@@ -1,0 +1,42 @@
+:root {
+  --paper: #F5F7F5;
+  --card: #FFFFFF;
+  --surface-subtle: #FBFCFB;
+  --surface-muted: #E8EDEA;
+  --ink: #141918;
+  --ink-2: #4B5452;
+  --ink-3: #7A8481;
+  --line: #E2E7E4;
+  --line-2: #EEF1EF;
+  --border-input: #CBD3CF;
+  --green: #0E8A4E;
+  --green-deep: #0A6B3C;
+  --green-wash: #E6F4EC;
+  --green-accent: #7BE0A9;
+  --amber: #B45309;
+  --amber-wash: #FEF3C7;
+  --danger: #B42318;
+  --danger-wash: #FDEDEB;
+
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --r-card: 16px;
+  --r-inner: 12px;
+  --r-field: 10px;
+  --r-pill: 999px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 28px;
+  --space-7: 40px;
+
+  --shadow: 0 1px 2px rgba(20, 25, 24, 0.04), 0 6px 20px rgba(20, 25, 24, 0.05);
+  --shadow-lg: 0 10px 30px rgba(20, 25, 24, 0.12);
+
+  color-scheme: light;
+}

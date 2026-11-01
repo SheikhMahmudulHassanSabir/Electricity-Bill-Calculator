@@ -1,0 +1,5 @@
+-- =============================================================================
+-- Seed file (intentionally contains no fake readings, rates, or hardcoded users)
+-- =============================================================================
+-- Workspaces, meters, billing rates, and bills are created by authenticated
+-- users through the application UI.
