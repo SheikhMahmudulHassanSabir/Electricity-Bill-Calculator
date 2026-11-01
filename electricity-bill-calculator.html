@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Electricity Bill Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
+<style>
+/* Layout: one working column. Meter cards on the left, billing rate beside them, results below as printable bills. */
+:root{
+  --paper:#F5F7F5;
+  --card:#FFFFFF;
+  --ink:#141918;
+  --ink-2:#4B5452;
+  --ink-3:#7A8481;
+  --line:#E2E7E4;
+  --line-2:#EEF1EF;
+  --green:#0E8A4E;
+  --green-deep:#0A6B3C;
+  --green-wash:#E6F4EC;
+  --danger:#B42318;
+  --danger-wash:#FDEDEB;
+  --font-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --font-body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  --r-card:16px;
+  --r-field:10px;
+  --shadow:0 1px 2px rgba(20,25,24,.04),0 6px 20px rgba(20,25,24,.05);
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 var(--font-body);
+  padding-block:0 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1080px;margin-inline:auto}
+h1,h2,h3{font-family:var(--font-display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+button,input{font:inherit;color:inherit}
+.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.num{font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+
+/* Header */
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:28px 22px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:14px;min-width:0}
+.mark{width:44px;height:44px;border-radius:12px;background:var(--ink);color:#fff;display:grid;place-items:center;flex:none}
+.mark .ic{width:22px;height:22px;stroke:#7BE0A9}
+.top h1{font-size:clamp(1.4rem,3.4vw,1.9rem);line-height:1.15}
+.top p{margin:2px 0 0;color:var(--ink-2);font-size:.9rem}
+.stamp{font-family:var(--font-mono);font-size:.78rem;color:var(--ink-2);border:1px solid var(--line);background:var(--card);padding:6px 12px;border-radius:999px}
+
+/* Panels */
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--shadow)}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px 0;flex-wrap:wrap}
+.panel-head h2{font-size:1.1rem}
+.panel-head p{margin:2px 0 0;color:var(--ink-2);font-size:.85rem}
+.panel-body{padding:16px 20px 20px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start}
+#rateCard{order:2}
+.meters-panel{order:1}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-weight:500;transition:background .15s,border-color .15s,transform .05s}
+.btn:hover{background:var(--line-2);border-color:#cfd6d2}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--green);border-color:var(--green);color:#fff}
+.btn.primary:hover{background:var(--green-deep);border-color:var(--green-deep)}
+.btn.dark{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn.dark:hover{background:#262d2b}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--ink-2)}
+.btn.icon{width:38px;min-height:38px;padding:0}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+
+/* Fields */
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label{font-size:.78rem;font-weight:600;color:var(--ink-2);letter-spacing:.02em;text-transform:uppercase}
+.field label span.opt{text-transform:none;font-weight:400;color:var(--ink-3);letter-spacing:0}
+.input{display:flex;align-items:center;border:1px solid #CBD3CF;border-radius:var(--r-field);background:#fff;min-height:44px;transition:border-color .15s,box-shadow .15s}
+.input:focus-within{border-color:var(--green);box-shadow:0 0 0 3px rgba(14,138,78,.16)}
+.input input{flex:1;min-width:0;border:0;background:transparent;padding:10px 12px;outline:0;font-family:var(--font-mono);font-size:.95rem}
+.input input.text{font-family:var(--font-body)}
+.input input::placeholder{color:#A3ACA8}
+.input .fix{padding:0 0 0 12px;color:var(--ink-3);font-family:var(--font-mono);font-size:.85rem}
+.input .fix.end{padding:0 12px 0 0}
+.input.bad{border-color:var(--danger);background:#fffafa}
+.input.bad:focus-within{box-shadow:0 0 0 3px rgba(180,35,24,.14)}
+.err{min-height:1.1em;font-size:.78rem;color:var(--danger);line-height:1.3}
+.hint{font-size:.8rem;color:var(--ink-3);margin:0}
+
+/* Meter cards */
+#meterList{display:grid;gap:14px;padding:16px 20px 8px}
+.meter{border:1px solid var(--line);border-radius:14px;padding:14px 14px 10px;background:#FBFCFB}
+.meter-head{display:flex;align-items:flex-end;gap:10px;margin-bottom:12px}
+.meter-head .field{flex:1}
+.fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 12px}
+.meter-foot{display:flex;justify-content:space-between;gap:12px;align-items:center;border-top:1px dashed var(--line);margin-top:4px;padding-top:10px;font-size:.85rem;color:var(--ink-2);flex-wrap:wrap}
+.meter-foot strong{font-family:var(--font-mono);font-weight:500;color:var(--ink)}
+.meter-foot .live{color:var(--green-deep)}
+.add-row{padding:4px 20px 20px}
+
+/* Controls */
+.controls{margin-top:20px;padding:16px 20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.controls .grow{flex:1;min-width:220px}
+.banner{display:flex;gap:10px;align-items:flex-start;padding:10px 14px;border-radius:10px;font-size:.9rem;line-height:1.4}
+.banner.ok{background:var(--green-wash);color:var(--green-deep)}
+.banner.bad{background:var(--danger-wash);color:var(--danger)}
+.banner .ic{margin-top:1px}
+.banner:empty{display:none}
+
+/* View selector */
+.viewbar{margin-top:28px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.seg{display:inline-flex;padding:4px;background:#E8EDEA;border-radius:12px;gap:4px;max-width:100%}
+.seg button{display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:0 18px;border:0;border-radius:9px;background:transparent;color:var(--ink-2);font-weight:600;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* Results */
+#results{margin-top:16px}
+.view-off{display:none}
+.print-head{display:none}
+.bill-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
+.bill{padding:0;overflow:hidden;display:flex;flex-direction:column;break-inside:avoid}
+.bill-top{padding:16px 18px 12px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.bill-top h3{font-size:1.05rem;overflow-wrap:anywhere}
+.tag{font-family:var(--font-mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);white-space:nowrap}
+.dial{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin:0 18px 12px;background:var(--ink);border-radius:12px;padding:10px 12px;color:#fff}
+.dial small{display:block;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:#9CA7A3;margin-bottom:2px}
+.dial b{font-family:var(--font-mono);font-weight:500;font-size:1.02rem;color:#EAF7F0;overflow-wrap:anywhere}
+.dial .ic{stroke:#7BE0A9}
+.rows{margin:0;padding:0 18px;display:grid}
+.rows div{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--line-2);font-size:.92rem}
+.rows dt{color:var(--ink-2)}
+.rows dd{margin:0;font-family:var(--font-mono);text-align:right}
+.pay{margin-top:auto;padding:14px 18px;background:var(--green-wash);display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.pay span{font-weight:600;color:var(--green-deep);font-size:.85rem;text-transform:uppercase;letter-spacing:.06em}
+.pay strong{font-family:var(--font-display);font-size:1.6rem;color:var(--green-deep);font-variant-numeric:tabular-nums}
+.bill.waiting{border-style:dashed;box-shadow:none;background:transparent}
+.waiting-body{padding:0 18px 20px;color:var(--ink-2);font-size:.9rem}
+.empty{padding:36px 20px;text-align:center;color:var(--ink-2)}
+.empty .ic{width:28px;height:28px;color:var(--ink-3);margin-bottom:8px}
+.empty b{display:block;color:var(--ink);margin-bottom:2px}
+
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:18px 20px 0}
+.tile{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#FBFCFB}
+.tile small{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2);font-weight:600}
+.tile b{display:block;font-family:var(--font-mono);font-weight:500;font-size:1.15rem;margin-top:4px;overflow-wrap:anywhere}
+.grand{margin:16px 20px 0;border-radius:14px;background:var(--green);color:#fff;padding:18px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.grand span{font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:.85rem;opacity:.92}
+.grand strong{font-family:var(--font-display);font-size:clamp(1.8rem,5vw,2.6rem);font-variant-numeric:tabular-nums;line-height:1.1}
+.sect-title{padding:22px 20px 10px;font-size:1rem}
+.table-scroll{overflow-x:auto;padding:0 20px 20px}
+table{width:100%;border-collapse:collapse;font-size:.9rem;min-width:720px}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2);text-align:right;font-weight:600;padding:10px 10px;border-bottom:2px solid var(--ink);white-space:nowrap}
+td{padding:11px 10px;border-bottom:1px solid var(--line-2);text-align:right;font-family:var(--font-mono);font-size:.88rem;white-space:nowrap}
+th:first-child,td:first-child{text-align:left;font-family:var(--font-body);font-weight:500;white-space:normal;min-width:110px}
+tfoot td{border-bottom:0;border-top:2px solid var(--ink);font-weight:600;background:#FBFCFB}
+td.total{color:var(--green-deep);font-weight:600}
+.note{padding:0 20px 18px;margin:0;color:var(--ink-2);font-size:.85rem}
+
+/* Footer */
+.foot{margin-top:28px;padding:16px 20px;display:grid;gap:6px}
+.foot h2{font-size:.95rem}
+.foot p{margin:0;color:var(--ink-2);font-size:.88rem}
+.foot code{font-family:var(--font-mono);font-size:.82rem;background:var(--line-2);padding:2px 6px;border-radius:6px;color:var(--ink)}
+.foot .sum{color:var(--ink);font-weight:500}
+
+/* Toast */
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--ink);color:#fff;padding:11px 16px;border-radius:10px;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:calc(100vw - 32px);z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.bad{background:var(--danger)}
+
+@media (max-width:900px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  #rateCard{order:1}
+  .meters-panel{order:2}
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:640px){
+  .fields{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .seg{width:100%}
+  .seg button{flex:1;justify-content:center;padding:0 10px}
+  .actions .btn{flex:1}
+  .controls .btn{flex:1}
+  .panel-head,.panel-body,#meterList,.add-row,.controls{padding-left:14px;padding-right:14px}
+  .tiles,.grand{margin-left:0;margin-right:0;padding-left:14px;padding-right:14px}
+  .grand{margin-left:14px;margin-right:14px}
+  .table-scroll{padding:0 14px 16px}
+  .sect-title{padding-left:14px;padding-right:14px}
+  .note{padding-left:14px;padding-right:14px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* Print */
+@media print{
+  @page{margin:14mm}
+  body{background:#fff;padding:0;font-size:12px}
+  .no-print{display:none!important}
+  .view-off{display:none!important}
+  .print-head{display:flex!important;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:16px}
+  .print-head h2{font-size:20px}
+  .print-head span{font-family:var(--font-mono);font-size:11px}
+  .panel{box-shadow:none}
+  #results{margin-top:0}
+  body[data-print="individual"] #viewIndividual{display:block!important}
+  body[data-print="individual"] #viewCombined{display:none!important}
+  body[data-print="combined"] #viewCombined{display:block!important}
+  body[data-print="combined"] #viewIndividual{display:none!important}
+  .bill-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .bill{break-inside:avoid;page-break-inside:avoid}
+  .waiting{display:none!important}
+  .dial,.pay,.grand,.tile,th,tfoot td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .table-scroll{overflow:visible}
+  table{min-width:0}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></symbol>
+  <symbol id="i-calc" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15h.01M8 19h.01M12 19h.01M16 19h.01"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></symbol>
+  <symbol id="i-print" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><path d="m12 14 4-4"/><path d="M3.3 19a10 10 0 1 1 17.4 0"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+</svg>
+
+<div class="wrap">
+  <!-- 1. Header -->
+  <header class="top no-print">
+    <div class="brand">
+      <div class="mark"><svg class="ic"><use href="#i-zap"/></svg></div>
+      <div>
+        <h1>Electricity Bill Calculator</h1>
+        <p>Turn meter readings into a bill for each room, or one combined bill.</p>
+      </div>
+    </div>
+    <div class="stamp" id="todayStamp"></div>
+  </header>
+
+  <main>
+    <div class="layout no-print">
+      <!-- 2. Meter input -->
+      <section class="panel meters-panel" aria-labelledby="mTitle">
+        <div class="panel-head">
+          <div>
+            <h2 id="mTitle">Meters</h2>
+            <p>Each meter keeps its own readings and bill.</p>
+          </div>
+        </div>
+        <div id="meterList"></div>
+        <div class="add-row">
+          <button class="btn" id="addMeter" type="button"><svg class="ic"><use href="#i-plus"/></svg>Add Meter</button>
+        </div>
+      </section>
+
+      <!-- 3. Billing rate -->
+      <section class="panel" id="rateCard" aria-labelledby="rTitle">
+        <div class="panel-head">
+          <div>
+            <h2 id="rTitle">Billing rate</h2>
+            <p>Price for one unit (kWh).</p>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="field">
+            <label for="rate">Per unit rate</label>
+            <div class="input" id="rateWrap">
+              <span class="fix">₹</span>
+              <input id="rate" inputmode="decimal" autocomplete="off" placeholder="0.00" aria-describedby="rateErr">
+              <span class="fix end">/ kWh</span>
+            </div>
+            <div class="err" id="rateErr" role="alert"></div>
+          </div>
+          <p class="hint">Applies to every meter. A meter can use its own rate by filling the rate field on its card.</p>
+        </div>
+      </section>
+    </div>
+
+    <!-- 4. Calculation controls -->
+    <section class="panel controls no-print" aria-label="Calculation controls">
+      <button class="btn primary" id="calcBtn" type="button"><svg class="ic"><use href="#i-calc"/></svg>Calculate Bill</button>
+      <button class="btn" id="resetBtn" type="button"><svg class="ic"><use href="#i-reset"/></svg>Reset</button>
+      <div class="grow"><div class="banner" id="banner" role="status" aria-live="polite"></div></div>
+    </section>
+
+    <!-- 5. View selector -->
+    <div class="viewbar no-print">
+      <div class="seg" role="group" aria-label="Bill view">
+        <button type="button" id="tabInd" aria-pressed="true"><svg class="ic"><use href="#i-grid"/></svg>Individual Bills</button>
+        <button type="button" id="tabCom" aria-pressed="false"><svg class="ic"><use href="#i-layers"/></svg>Combined Bill</button>
+      </div>
+      <div class="actions">
+        <button class="btn" id="printBtn" type="button"><svg class="ic"><use href="#i-print"/></svg><span id="printLabel">Print bills</span></button>
+        <button class="btn dark" id="pdfBtn" type="button"><svg class="ic"><use href="#i-download"/></svg>Download PDF</button>
+      </div>
+    </div>
+
+    <!-- 6 and 7. Results dashboard and detailed breakdown -->
+    <section id="results" aria-label="Bills">
+      <div class="print-head">
+        <h2 id="printTitle">Electricity Bill</h2>
+        <span id="printDate"></span>
+      </div>
+      <div id="viewIndividual"></div>
+      <div id="viewCombined" class="view-off"></div>
+    </section>
+  </main>
+
+  <!-- 8. Footer -->
+  <footer class="panel foot no-print">
+    <h2>Calculation summary</h2>
+    <p><code>Units = Current − Previous</code> &nbsp; <code>Charge = Units × Rate</code> &nbsp; <code>Total = Charge + Additional</code></p>
+    <p class="sum" id="footSum"></p>
+  </footer>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ---------- State ---------- */
+  var KEY = 'ebc-state-v1';
+  var uid = 0;
+  var ST = { rate:'', view:'individual', meters:[], touched:{}, submitted:false };
+
+  function newMeter(n){ return { id: ++uid, name: 'Room ' + n, prev:'', cur:'', rate:'', extra:'' }; }
+
+  function load(){
+    try{
+      var raw = localStorage.getItem(KEY);
+      if(!raw) return false;
+      var d = JSON.parse(raw);
+      if(!d || !Array.isArray(d.meters) || !d.meters.length) return false;
+      ST.rate = String(d.rate || '');
+      ST.view = d.view === 'combined' ? 'combined' : 'individual';
+      ST.meters = d.meters.map(function(m){
+        uid = Math.max(uid, Number(m.id) || 0);
+        return { id: Number(m.id) || ++uid, name: String(m.name||''), prev:String(m.prev||''), cur:String(m.cur||''), rate:String(m.rate||''), extra:String(m.extra||'') };
+      });
+      return true;
+    }catch(e){ return false; }
+  }
+  function save(){
+    try{ localStorage.setItem(KEY, JSON.stringify({ rate:ST.rate, view:ST.view, meters:ST.meters })); }catch(e){}
+  }
+
+  /* ---------- Helpers ---------- */
+  function $(s, r){ return (r||document).querySelector(s); }
+  function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function icon(id){ return '<svg class="ic"><use href="#i-'+id+'"/></svg>'; }
+
+  function round2(x){ return Math.round((x + Number.EPSILON) * 100) / 100; }
+  function round6(x){ return Math.round((x + Number.EPSILON) * 1e6) / 1e6; }
+  function sumMoney(list){ return list.reduce(function(a,v){ return a + Math.round(v*100); }, 0) / 100; }
+
+  function fmtN(n, max){ return Number(n).toLocaleString('en-IN', { maximumFractionDigits: max == null ? 3 : max }); }
+  function inr(n){ return '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits:2, maximumFractionDigits:2 }); }
+  function rateFmt(n){ return '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits:2, maximumFractionDigits:4 }) + ' / kWh'; }
+  function pdfMoney(n){ return 'Rs. ' + Number(n).toLocaleString('en-IN', { minimumFractionDigits:2, maximumFractionDigits:2 }); }
+  function todayStr(){ return new Date().toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' }); }
+  function isoDate(){ var d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+  function num(s){
+    var t = String(s == null ? '' : s).trim().replace(/,/g,'');
+    if(t === '') return { empty:true };
+    if(!/^[-+]?(\d+\.?\d*|\.\d+)$/.test(t)) return { bad:true };
+    return { v:Number(t) };
+  }
+  function check(r, required, emptyMsg){
+    if(r.empty) return required ? emptyMsg : null;
+    if(r.bad) return 'Enter a valid number.';
+    if(r.v < 0) return 'Negative values are not allowed.';
+    return null;
+  }
+
+  function displayName(m, i){ var n = m.name.trim(); return n || ('Meter ' + (i+1)); }
+
+  /* ---------- Calculation ---------- */
+  function evalMeter(m){
+    var e = {};
+    var p = num(m.prev), c = num(m.cur), x = num(m.extra);
+    var own = m.rate.trim() !== '';
+    var r = own ? num(m.rate) : num(ST.rate);
+
+    e.prev = check(p, true, 'Enter the previous reading.');
+    e.cur = check(c, true, 'Enter the current reading.');
+    e.extra = check(x, false);
+    e.rate = own ? check(r, true) : check(r, true, 'Set the billing rate first.');
+    if(!e.prev && !e.cur && c.v < p.v){
+      e.cur = 'Cannot be lower than the previous reading (' + fmtN(p.v) + ').';
+    }
+    Object.keys(e).forEach(function(k){ if(!e[k]) delete e[k]; });
+
+    var out = { errors:e, ok:false, idle: m.prev.trim()==='' && m.cur.trim()==='' && m.extra.trim()==='' };
+    if(Object.keys(e).length === 0){
+      var units = round6(c.v - p.v);
+      var charge = round2(units * r.v);
+      var extra = round2(x.empty ? 0 : x.v);
+      out.ok = true;
+      out.prev = p.v; out.cur = c.v; out.rate = r.v;
+      out.units = units; out.charge = charge; out.extra = extra;
+      out.total = round2(charge + extra);
+    }
+    return out;
+  }
+
+  function globalRateError(){
+    var needed = ST.meters.some(function(m){ return m.rate.trim() === ''; });
+    if(!needed) return null;
+    return check(num(ST.rate), true, 'Enter the per-unit rate.');
+  }
+
+  function compute(){
+    var res = ST.meters.map(evalMeter);
+    var good = [];
+    res.forEach(function(r, i){ if(r.ok) good.push({ m: ST.meters[i], i: i, r: r }); });
+    var totals = {
+      count: good.length,
+      units: round6(good.reduce(function(a,g){ return a + g.r.units; }, 0)),
+      charge: sumMoney(good.map(function(g){ return g.r.charge; })),
+      extra: sumMoney(good.map(function(g){ return g.r.extra; })),
+      total: sumMoney(good.map(function(g){ return g.r.total; }))
+    };
+    return { res: res, good: good, totals: totals };
+  }
+
+  /* ---------- Meter cards (built once per add/remove/reset) ---------- */
+  function field(id, key, label, opts){
+    var pre = opts.pre ? '<span class="fix">'+opts.pre+'</span>' : '';
+    var suf = opts.suf ? '<span class="fix end">'+opts.suf+'</span>' : '';
+    return '<div class="field"><label for="'+key+'-'+id+'">'+label+(opts.opt?' <span class="opt">(optional)</span>':'')+'</label>'
+      + '<div class="input" data-wrap="'+key+'">'+pre
+      + '<input id="'+key+'-'+id+'" data-field="'+key+'" inputmode="decimal" autocomplete="off" placeholder="'+(opts.ph||'0.00')+'" value="'+esc(opts.val)+'">'
+      + suf+'</div><div class="err" data-err="'+key+'" role="alert"></div></div>';
+  }
+
+  function renderMeters(){
+    var list = $('#meterList');
+    list.innerHTML = ST.meters.map(function(m, i){
+      return '<article class="meter" data-id="'+m.id+'" aria-label="Meter '+(i+1)+'">'
+        + '<div class="meter-head"><div class="field"><label for="name-'+m.id+'">Meter / room name</label>'
+        + '<div class="input"><input class="text" id="name-'+m.id+'" data-field="name" autocomplete="off" placeholder="e.g. Room 1, Main Meter" value="'+esc(m.name)+'"></div></div>'
+        + '<button class="btn icon ghost" type="button" data-remove="'+m.id+'" aria-label="Remove '+esc(displayName(m,i))+'" '+(ST.meters.length===1?'disabled':'')+'>'+icon('trash')+'</button></div>'
+        + '<div class="fields">'
+        + field(m.id,'prev','Previous reading',{suf:'kWh',val:m.prev})
+        + field(m.id,'cur','Current reading',{suf:'kWh',val:m.cur})
+        + field(m.id,'rate','Per unit rate',{pre:'₹',opt:true,val:m.rate,ph:'Default'})
+        + field(m.id,'extra','Additional charges',{pre:'₹',opt:true,val:m.extra})
+        + '</div>'
+        + '<div class="meter-foot"><span data-sum>Incomplete</span><span>Meter bill <strong data-total>—</strong></span></div>'
+        + '</article>';
+    }).join('');
+  }
+
+  function visible(key){ return ST.submitted || ST.touched[key]; }
+
+  function refreshMeterCards(c){
+    var rateStr = ST.rate.trim() && !check(num(ST.rate), true) ? '₹' + fmtN(num(ST.rate).v, 4) : null;
+    ST.meters.forEach(function(m, i){
+      var card = $('.meter[data-id="'+m.id+'"]');
+      if(!card) return;
+      var r = c.res[i];
+      ['prev','cur','rate','extra'].forEach(function(k){
+        var msg = r.errors[k];
+        var show = msg && visible(m.id + '.' + k);
+        var wrap = $('[data-wrap="'+k+'"]', card);
+        var err = $('[data-err="'+k+'"]', card);
+        wrap.classList.toggle('bad', !!show);
+        err.textContent = show ? msg : '';
+        $('input[data-field="'+k+'"]', card).setAttribute('aria-invalid', show ? 'true' : 'false');
+      });
+      $('input[data-field="rate"]', card).placeholder = rateStr ? 'Uses ' + rateStr : 'Default';
+      var sum = $('[data-sum]', card), tot = $('[data-total]', card);
+      if(r.ok){
+        sum.innerHTML = '<span class="live">' + fmtN(r.units) + ' units</span>';
+        tot.textContent = inr(r.total);
+      } else {
+        sum.textContent = r.idle ? 'Waiting for readings' : 'Incomplete';
+        tot.textContent = '—';
+      }
+    });
+    // global rate
+    var ge = globalRateError();
+    var showG = ge && visible('rate');
+    $('#rateWrap').classList.toggle('bad', !!showG);
+    $('#rateErr').textContent = showG ? ge : '';
+    $('#rate').setAttribute('aria-invalid', showG ? 'true' : 'false');
+  }
+
+  /* ---------- Results ---------- */
+  function indCard(m, i, r){
+    var name = esc(displayName(m, i));
+    if(!r.ok){
+      var first = Object.keys(r.errors).map(function(k){ return r.errors[k]; })[0];
+      return '<article class="panel bill waiting"><div class="bill-top"><h3>'+name+'</h3><span class="tag">Not billed</span></div>'
+        + '<div class="waiting-body">'+(r.idle ? 'Enter the previous and current readings to see this bill.' : esc(first || 'Complete the highlighted fields.'))+'</div></article>';
+    }
+    return '<article class="panel bill"><div class="bill-top"><h3>'+name+'</h3><span class="tag">Meter bill</span></div>'
+      + '<div class="dial"><div><small>Previous</small><b>'+fmtN(r.prev)+'</b></div>'+icon('arrow')+'<div style="text-align:right"><small>Current</small><b>'+fmtN(r.cur)+'</b></div></div>'
+      + '<dl class="rows">'
+      + '<div><dt>Units consumed</dt><dd>'+fmtN(r.units)+' kWh</dd></div>'
+      + '<div><dt>Rate per unit</dt><dd>'+rateFmt(r.rate)+'</dd></div>'
+      + '<div><dt>Electricity charges</dt><dd>'+inr(r.charge)+'</dd></div>'
+      + '<div><dt>Additional charges</dt><dd>'+inr(r.extra)+'</dd></div>'
+      + '</dl>'
+      + '<div class="pay"><span>Amount payable</span><strong>'+inr(r.total)+'</strong></div></article>';
+  }
+
+  function renderIndividual(c){
+    var box = $('#viewIndividual');
+    if(!ST.meters.length){ box.innerHTML = ''; return; }
+    if(c.good.length === 0 && ST.meters.every(function(m, i){ return c.res[i].idle; })){
+      box.innerHTML = '<div class="panel empty">'+icon('gauge')+'<b>No bills yet</b>Enter meter readings and a rate. Bills appear here as you type.</div>';
+      return;
+    }
+    box.innerHTML = '<div class="bill-grid">' + ST.meters.map(function(m, i){ return indCard(m, i, c.res[i]); }).join('') + '</div>';
+  }
+
+  function renderCombined(c){
+    var box = $('#viewCombined');
+    var t = c.totals;
+    if(t.count === 0){
+      box.innerHTML = '<div class="panel empty">'+icon('layers')+'<b>No combined bill yet</b>Add at least one meter with valid readings and a rate.</div>';
+      return;
+    }
+    var rows = c.good.map(function(g){
+      return '<tr><td>'+esc(displayName(g.m, g.i))+'</td><td>'+fmtN(g.r.prev)+'</td><td>'+fmtN(g.r.cur)+'</td><td>'+fmtN(g.r.units)+'</td><td>'+rateFmt(g.r.rate).replace(' / kWh','')+'</td><td>'+inr(g.r.charge)+'</td><td>'+inr(g.r.extra)+'</td><td class="total">'+inr(g.r.total)+'</td></tr>';
+    }).join('');
+    var skipped = ST.meters.length - t.count;
+    box.innerHTML = '<div class="panel">'
+      + '<div class="panel-head"><div><h2>Combined bill</h2><p>Sum of all individual meter bills.</p></div></div>'
+      + '<div class="tiles">'
+      + '<div class="tile"><small>Meters</small><b>'+t.count+'</b></div>'
+      + '<div class="tile"><small>Total units</small><b>'+fmtN(t.units)+' kWh</b></div>'
+      + '<div class="tile"><small>Electricity charges</small><b>'+inr(t.charge)+'</b></div>'
+      + '<div class="tile"><small>Additional charges</small><b>'+inr(t.extra)+'</b></div>'
+      + '</div>'
+      + '<div class="grand"><span>Grand total payable</span><strong>'+inr(t.total)+'</strong></div>'
+      + '<h3 class="sect-title">Meter-wise breakdown</h3>'
+      + '<div class="table-scroll"><table><thead><tr><th>Meter</th><th>Previous</th><th>Current</th><th>Units</th><th>Rate (₹)</th><th>Electricity</th><th>Additional</th><th>Total</th></tr></thead><tbody>'+rows+'</tbody>'
+      + '<tfoot><tr><td>Total</td><td></td><td></td><td>'+fmtN(t.units)+'</td><td></td><td>'+inr(t.charge)+'</td><td>'+inr(t.extra)+'</td><td>'+inr(t.total)+'</td></tr></tfoot></table></div>'
+      + (skipped ? '<p class="note">'+skipped+' of '+ST.meters.length+' meters left out because their readings are incomplete or invalid.</p>' : '')
+      + '</div>';
+  }
+
+  function renderFooter(c){
+    var t = c.totals;
+    $('#footSum').textContent = t.count
+      ? t.count + ' of ' + ST.meters.length + ' meters billed · ' + fmtN(t.units) + ' units · Grand total ' + inr(t.total)
+      : 'No valid meter readings yet.';
+  }
+
+  function renderBanner(c){
+    var b = $('#banner');
+    if(!ST.submitted){ b.className = 'banner'; b.innerHTML = ''; return; }
+    var bad = ST.meters.length - c.good.length;
+    var ge = globalRateError();
+    if(bad === 0){
+      b.className = 'banner ok';
+      b.innerHTML = icon('check') + '<span>Bill calculated for ' + c.good.length + (c.good.length===1?' meter':' meters') + '. Total payable ' + inr(c.totals.total) + '.</span>';
+    } else {
+      b.className = 'banner bad';
+      b.innerHTML = icon('alert') + '<span>' + bad + (bad===1?' meter needs':' meters need') + ' attention' + (ge ? ' and the billing rate is missing or invalid' : '') + '. Fix the highlighted fields.</span>';
+    }
+  }
+
+  function setView(v){
+    ST.view = v;
+    $('#tabInd').setAttribute('aria-pressed', v==='individual');
+    $('#tabCom').setAttribute('aria-pressed', v==='combined');
+    $('#viewIndividual').classList.toggle('view-off', v!=='individual');
+    $('#viewCombined').classList.toggle('view-off', v!=='combined');
+    $('#printLabel').textContent = v==='individual' ? 'Print bills' : 'Print combined bill';
+    save();
+  }
+
+  var last = null;
+  function updateAll(){
+    last = compute();
+    refreshMeterCards(last);
+    renderIndividual(last);
+    renderCombined(last);
+    renderFooter(last);
+    renderBanner(last);
+    save();
+  }
+
+  /* ---------- Toast ---------- */
+  var toastTimer;
+  function toast(msg, bad){
+    var t = $('#toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (bad ? ' bad' : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.className = 'toast'; }, 2800);
+  }
+
+  /* ---------- Print and PDF ---------- */
+  function ensureBillable(){
+    if(!last || last.good.length === 0){
+      toast('Nothing to export yet. Enter valid readings and a rate first.', true);
+      return false;
+    }
+    return true;
+  }
+
+  function doPrint(){
+    if(!ensureBillable()) return;
+    var mode = ST.view;
+    document.body.setAttribute('data-print', mode);
+    $('#printTitle').textContent = mode === 'individual' ? 'Electricity Bills' : 'Combined Electricity Bill';
+    $('#printDate').textContent = 'Date: ' + todayStr();
+    window.print();
+  }
+  window.addEventListener('afterprint', function(){ document.body.removeAttribute('data-print'); });
+
+  function doPdf(){
+    if(!ensureBillable()) return;
+    var lib = window.jspdf && window.jspdf.jsPDF;
+    var c = last;
+    if(!lib){
+      toast('PDF library could not load. Use Print and choose Save as PDF.', true);
+      return;
+    }
+    var mode = ST.view;
+    var doc = new lib({ unit:'pt', format:'a4' });
+    if(typeof doc.autoTable !== 'function'){
+      toast('PDF library could not load. Use Print and choose Save as PDF.', true);
+      return;
+    }
+    var L = 40, R = 40, ink = [20,25,24], green = [14,138,78];
+
+    doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.setTextColor(ink[0],ink[1],ink[2]);
+    doc.text(mode === 'individual' ? 'Electricity Bills' : 'Combined Electricity Bill', L, 52);
+    doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(90,98,95);
+    doc.text('Date: ' + todayStr(), L, 70);
+    var y = 90;
+
+    if(mode === 'individual'){
+      c.good.forEach(function(g){
+        var r = g.r;
+        doc.autoTable({
+          startY: y, margin:{ left:L, right:R }, theme:'grid',
+          head: [[displayName(g.m, g.i), '']],
+          body: [
+            ['Previous reading', fmtN(r.prev) + ' kWh'],
+            ['Current reading', fmtN(r.cur) + ' kWh'],
+            ['Units consumed', fmtN(r.units) + ' kWh'],
+            ['Rate per unit', 'Rs. ' + fmtN(r.rate, 4) + ' / kWh'],
+            ['Electricity charges', pdfMoney(r.charge)],
+            ['Additional charges', pdfMoney(r.extra)],
+            [{ content:'Amount payable', styles:{ fontStyle:'bold', textColor:green } }, { content:pdfMoney(r.total), styles:{ fontStyle:'bold', textColor:green } }]
+          ],
+          headStyles:{ fillColor:ink, textColor:255 },
+          columnStyles:{ 1:{ halign:'right' } },
+          styles:{ fontSize:10, cellPadding:6 }
+        });
+        y = doc.lastAutoTable.finalY + 18;
+      });
+    } else {
+      var t = c.totals;
+      doc.autoTable({
+        startY: y, margin:{ left:L, right:R }, theme:'grid',
+        head: [['Summary', '']],
+        body: [
+          ['Total meters', String(t.count)],
+          ['Total units consumed', fmtN(t.units) + ' kWh'],
+          ['Total electricity charges', pdfMoney(t.charge)],
+          ['Total additional charges', pdfMoney(t.extra)],
+          [{ content:'Grand total payable', styles:{ fontStyle:'bold', textColor:green } }, { content:pdfMoney(t.total), styles:{ fontStyle:'bold', textColor:green } }]
+        ],
+        headStyles:{ fillColor:ink, textColor:255 },
+        columnStyles:{ 1:{ halign:'right' } },
+        styles:{ fontSize:10, cellPadding:6 }
+      });
+      y = doc.lastAutoTable.finalY + 22;
+      doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(ink[0],ink[1],ink[2]);
+      doc.text('Meter-wise breakdown', L, y);
+      doc.autoTable({
+        startY: y + 8, margin:{ left:L, right:R }, theme:'grid',
+        head: [['Meter','Previous','Current','Units','Rate','Electricity','Additional','Total']],
+        body: c.good.map(function(g){
+          return [displayName(g.m, g.i), fmtN(g.r.prev), fmtN(g.r.cur), fmtN(g.r.units), fmtN(g.r.rate, 4), pdfMoney(g.r.charge), pdfMoney(g.r.extra), pdfMoney(g.r.total)];
+        }),
+        foot: [['Total','','', fmtN(t.units), '', pdfMoney(t.charge), pdfMoney(t.extra), pdfMoney(t.total)]],
+        headStyles:{ fillColor:ink, textColor:255 },
+        footStyles:{ fillColor:[230,244,236], textColor:ink, fontStyle:'bold' },
+        columnStyles:{ 1:{halign:'right'},2:{halign:'right'},3:{halign:'right'},4:{halign:'right'},5:{halign:'right'},6:{halign:'right'},7:{halign:'right'} },
+        styles:{ fontSize:8.5, cellPadding:5 }
+      });
+    }
+    doc.save('electricity-bill-' + mode + '-' + isoDate() + '.pdf');
+    toast('PDF downloaded.');
+  }
+
+  /* ---------- Events ---------- */
+  var meterList = $('#meterList');
+
+  meterList.addEventListener('input', function(ev){
+    var input = ev.target.closest('input[data-field]');
+    if(!input) return;
+    var card = input.closest('.meter');
+    var m = ST.meters.filter(function(x){ return x.id === Number(card.dataset.id); })[0];
+    if(!m) return;
+    m[input.dataset.field] = input.value;
+    updateAll();
+  });
+  meterList.addEventListener('focusout', function(ev){
+    var input = ev.target.closest('input[data-field]');
+    if(!input) return;
+    var id = input.closest('.meter').dataset.id;
+    ST.touched[id + '.' + input.dataset.field] = true;
+    updateAll();
+  });
+  meterList.addEventListener('click', function(ev){
+    var btn = ev.target.closest('[data-remove]');
+    if(!btn || btn.disabled) return;
+    var id = Number(btn.dataset.remove);
+    if(ST.meters.length <= 1) return;
+    var removed = ST.meters.filter(function(m){ return m.id === id; })[0];
+    ST.meters = ST.meters.filter(function(m){ return m.id !== id; });
+    renderMeters();
+    updateAll();
+    toast((removed && removed.name.trim() ? removed.name.trim() : 'Meter') + ' removed.');
+  });
+
+  $('#rate').addEventListener('input', function(ev){ ST.rate = ev.target.value; updateAll(); });
+  $('#rate').addEventListener('focusout', function(){ ST.touched.rate = true; updateAll(); });
+
+  $('#addMeter').addEventListener('click', function(){
+    ST.meters.push(newMeter(ST.meters.length + 1));
+    renderMeters();
+    updateAll();
+    var cards = document.querySelectorAll('.meter');
+    var lastCard = cards[cards.length - 1];
+    var inp = $('input[data-field="prev"]', lastCard);
+    if(inp){ inp.focus({ preventScroll:true }); lastCard.scrollIntoView({ block:'center', behavior: matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth' }); }
+  });
+
+  $('#calcBtn').addEventListener('click', function(){
+    ST.submitted = true;
+    updateAll();
+    var ok = last.good.length === ST.meters.length && !globalRateError();
+    toast(ok ? 'Bill calculated.' : 'Some fields need attention.', !ok);
+    if(ok){
+      $('#results').scrollIntoView({ block:'start', behavior: matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth' });
+    } else {
+      var firstBad = $('.input.bad input');
+      if(firstBad) firstBad.focus();
+    }
+  });
+
+  $('#resetBtn').addEventListener('click', function(){
+    ST.rate = ''; ST.meters = [newMeter(1)]; ST.touched = {}; ST.submitted = false;
+    $('#rate').value = '';
+    renderMeters();
+    updateAll();
+    toast('All fields cleared.');
+  });
+
+  $('#tabInd').addEventListener('click', function(){ setView('individual'); });
+  $('#tabCom').addEventListener('click', function(){ setView('combined'); });
+  $('#printBtn').addEventListener('click', doPrint);
+  $('#pdfBtn').addEventListener('click', doPdf);
+
+  /* ---------- Init ---------- */
+  $('#todayStamp').textContent = todayStr();
+  if(!load()){ ST.meters = [newMeter(1)]; }
+  $('#rate').value = ST.rate;
+  renderMeters();
+  setView(ST.view);
+  updateAll();
+})();
+</script>
+</body>
+</html>
