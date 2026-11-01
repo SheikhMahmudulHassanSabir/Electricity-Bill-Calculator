@@ -1,5 +1,0 @@
-{
-  "name": "Electricity Bill Calculator",
-  "description": "Collaborative multi-meter electricity bill calculator with shared workspaces, real-time updates, bill history, print, and PDF export.",
-  "requestFramePermissions": []
-}

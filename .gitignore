@@ -36,3 +36,6 @@ lerna-debug.log*
 # Playwright & test artifacts
 .playwright-cli/
 coverage/
+
+# AI Studio artifacts
+.aistudio/
