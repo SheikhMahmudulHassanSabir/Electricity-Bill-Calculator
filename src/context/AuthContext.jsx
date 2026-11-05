@@ -4,6 +4,10 @@ import {
   onAuthStateChange,
   loginWithEmail,
   registerWithEmail,
+  sendEmailSignInLink,
+  completeEmailSignInLink,
+  isIncomingEmailSignInLink,
+  getPendingEmailLinkData,
   loginWithGooglePopup,
   sendPasswordReset,
   logoutUser,
@@ -14,12 +18,49 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [verifyingEmailLink, setVerifyingEmailLink] = useState(false);
+  const [emailLinkNeedsConfirmation, setEmailLinkNeedsConfirmation] = useState(false);
+  const [emailLinkError, setEmailLinkError] = useState('');
 
   useEffect(() => {
     let mounted = true;
 
     async function init() {
       try {
+        const href = typeof window !== 'undefined' ? window.location.href : '';
+        if (href && isIncomingEmailSignInLink(href)) {
+          const pending = getPendingEmailLinkData();
+          if (pending.email) {
+            if (mounted) setVerifyingEmailLink(true);
+            try {
+              const verifiedUser = await completeEmailSignInLink({
+                email: pending.email,
+                fullName: pending.fullName,
+                url: href,
+              });
+              if (mounted) {
+                setUser(verifiedUser);
+                setEmailLinkNeedsConfirmation(false);
+              }
+              return;
+            } catch (err) {
+              if (mounted) {
+                if (err?.code === 'EMAIL_REQUIRED') {
+                  setEmailLinkNeedsConfirmation(true);
+                } else {
+                  setEmailLinkError(err.message || 'Could not verify sign-in link.');
+                }
+              }
+            } finally {
+              if (mounted) setVerifyingEmailLink(false);
+            }
+          } else {
+            if (mounted) {
+              setEmailLinkNeedsConfirmation(true);
+            }
+          }
+        }
+
         const current = await getCurrentUser();
         if (mounted) {
           setUser(current);
@@ -60,6 +101,29 @@ export function AuthProvider({ children }) {
     return registered;
   }, []);
 
+  const sendEmailLink = useCallback(async ({ email, fullName }) => {
+    setEmailLinkError('');
+    return sendEmailSignInLink({ email, fullName });
+  }, []);
+
+  const completeEmailLink = useCallback(async ({ email, fullName }) => {
+    setEmailLinkError('');
+    setVerifyingEmailLink(true);
+    try {
+      const verifiedUser = await completeEmailSignInLink({ email, fullName });
+      setUser(verifiedUser);
+      setEmailLinkNeedsConfirmation(false);
+      return verifiedUser;
+    } finally {
+      setVerifyingEmailLink(false);
+    }
+  }, []);
+
+  const clearEmailLinkState = useCallback(() => {
+    setEmailLinkNeedsConfirmation(false);
+    setEmailLinkError('');
+  }, []);
+
   const loginWithGoogle = useCallback(async () => {
     const googleUser = await loginWithGooglePopup();
     setUser(googleUser);
@@ -80,8 +144,14 @@ export function AuthProvider({ children }) {
       value={{
         user,
         loading,
+        verifyingEmailLink,
+        emailLinkNeedsConfirmation,
+        emailLinkError,
         login,
         register,
+        sendEmailLink,
+        completeEmailLink,
+        clearEmailLinkState,
         loginWithGoogle,
         resetPassword,
         logout,

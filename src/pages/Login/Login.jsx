@@ -5,7 +5,7 @@ import { Icon } from '../../components/Icons/Icons.jsx';
 import './Login.css';
 
 export function Login() {
-  const { user, login } = useAuth();
+  const { user, login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
@@ -46,6 +46,19 @@ export function Login() {
       navigate('/calculator', { replace: true });
     } catch (err) {
       setFormError(err.message || 'Could not log in. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setFormError('');
+    setSubmitting(true);
+    try {
+      await loginWithGoogle();
+      navigate('/calculator', { replace: true });
+    } catch (err) {
+      setFormError(err.message || 'Could not log in with Google.');
     } finally {
       setSubmitting(false);
     }
@@ -131,6 +144,20 @@ export function Login() {
             {submitting ? 'Logging in…' : 'Log in'}
           </button>
         </form>
+
+        <div className="auth-divider">
+          <span>or</span>
+        </div>
+
+        <button
+          type="button"
+          className="btn ghost auth-google-btn"
+          onClick={handleGoogleLogin}
+          disabled={submitting}
+        >
+          <Icon name="google" />
+          <span>Continue with Google</span>
+        </button>
 
         <p className="auth-switch">
           New here? <Link to="/register">Create an account</Link>

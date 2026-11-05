@@ -149,6 +149,38 @@ export function Icon({ name, className = 'ic' }) {
           <path d="M18 6 6 18M6 6l12 12" />
         </svg>
       );
+    case 'mail':
+      return (
+        <svg className={className} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <rect x="2" y="4" width="20" height="16" rx="2" />
+          <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+        </svg>
+      );
+    case 'google':
+      return (
+        <svg className={className} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M21.8 12.23c0-.72-.06-1.4-.19-2.05H12v3.88h5.5a4.7 4.7 0 0 1-2.04 3.09v2.56h3.3c1.93-1.78 3.04-4.4 3.04-7.48z"
+            fill="#4285F4"
+            stroke="none"
+          />
+          <path
+            d="M12 22c2.76 0 5.07-.91 6.76-2.47l-3.3-2.56c-.91.61-2.08.98-3.46.98-2.66 0-4.92-1.8-5.73-4.22H2.86v2.65A9.99 9.99 0 0 0 12 22z"
+            fill="#34A853"
+            stroke="none"
+          />
+          <path
+            d="M6.27 13.73A6.01 6.01 0 0 1 5.95 12c0-.6.11-1.18.32-1.73V7.62H2.86A9.99 9.99 0 0 0 2 12c0 1.61.39 3.14 1.07 4.38l3.2-2.65z"
+            fill="#FBBC05"
+            stroke="none"
+          />
+          <path
+            d="M12 5.98c1.5 0 2.85.52 3.91 1.53l2.93-2.93C17.06 2.92 14.75 2 12 2A9.99 9.99 0 0 0 2.86 7.62l3.41 2.65C7.08 7.78 9.34 5.98 12 5.98z"
+            fill="#EA4335"
+            stroke="none"
+          />
+        </svg>
+      );
     default:
       return null;
   }

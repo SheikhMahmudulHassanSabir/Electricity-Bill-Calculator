@@ -5,7 +5,7 @@ import { Icon } from '../../components/Icons/Icons.jsx';
 import './Register.css';
 
 export function Register() {
-  const { user, register } = useAuth();
+  const { user, register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const [fullName, setFullName] = useState('');
@@ -61,6 +61,20 @@ export function Register() {
       }
     } catch (err) {
       setFormError(err.message || 'Could not create account. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setFormError('');
+    setInfoMsg('');
+    setSubmitting(true);
+    try {
+      await loginWithGoogle();
+      navigate('/workspaces', { replace: true });
+    } catch (err) {
+      setFormError(err.message || 'Could not sign in with Google.');
     } finally {
       setSubmitting(false);
     }
@@ -171,6 +185,20 @@ export function Register() {
             {submitting ? 'Creating account…' : 'Create account'}
           </button>
         </form>
+
+        <div className="auth-divider">
+          <span>or</span>
+        </div>
+
+        <button
+          type="button"
+          className="btn ghost auth-google-btn"
+          onClick={handleGoogleLogin}
+          disabled={submitting}
+        >
+          <Icon name="google" />
+          <span>Continue with Google</span>
+        </button>
 
         <p className="auth-switch">
           Already have an account? <Link to="/login">Log in</Link>
