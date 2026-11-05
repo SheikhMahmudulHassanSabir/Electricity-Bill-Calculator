@@ -3,7 +3,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding-block: 20px 16px;
+  padding-block: 18px 14px;
   border-bottom: 1px solid var(--line);
   margin-bottom: 24px;
   flex-wrap: nowrap;
@@ -22,6 +22,7 @@
   gap: 10px;
   text-decoration: none;
   color: var(--ink);
+  min-width: 0;
 }
 
 .brand-mark {
@@ -44,9 +45,11 @@
 .brand-title {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 1.18rem;
+  font-size: 1.16rem;
   letter-spacing: -0.01em;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .header-nav {
@@ -61,7 +64,7 @@
   font-weight: 500;
   color: var(--ink-2);
   text-decoration: none;
-  padding: 6px 2px;
+  padding: 8px 2px;
   border-bottom: 2px solid transparent;
   white-space: nowrap;
   transition: color 0.15s, border-color 0.15s;
@@ -83,15 +86,17 @@
   gap: 10px;
   flex-shrink: 0;
   white-space: nowrap;
+  min-width: 0;
 }
 
 .ws-switcher {
   display: flex;
   align-items: center;
+  min-width: 0;
 }
 
 .ws-select {
-  min-height: 36px;
+  min-height: 38px;
   max-width: 165px;
   padding: 0 26px 0 10px;
   border-radius: var(--r-field);
@@ -116,7 +121,7 @@
   font-size: 0.85rem;
   color: var(--ink-2);
   font-weight: 500;
-  max-width: 140px;
+  max-width: 135px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -140,17 +145,87 @@
   border: 0;
 }
 
-@media (max-width: 780px) {
+/* Tablet and below: wrap navigation cleanly to its own full-width bar */
+@media (max-width: 940px) {
   .top-header {
-    gap: 14px;
-    padding-block: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding-block: 14px 10px;
+    margin-bottom: 18px;
   }
 
   .header-nav {
     order: 3;
     width: 100%;
-    gap: 16px;
+    gap: 20px;
     padding-top: 8px;
     border-top: 1px solid var(--line-2);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .header-nav::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Mobile phones */
+@media (max-width: 640px) {
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+  }
+
+  .brand-title {
+    font-size: 1rem;
+  }
+
+  .user-greeting {
+    display: none;
+  }
+
+  .ws-select {
+    max-width: 135px;
+    min-height: 38px;
+    font-size: 0.82rem;
+    padding: 0 22px 0 8px;
+  }
+
+  .logout-btn {
+    min-height: 38px;
+    padding: 0 10px;
+  }
+
+  .header-nav {
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .nav-item {
+    font-size: 0.86rem;
+    padding: 8px 4px;
+    flex: 1;
+    text-align: center;
+  }
+}
+
+@media (max-width: 420px) {
+  .brand-title {
+    max-width: 155px;
+  }
+
+  .ws-select {
+    max-width: 112px;
+  }
+
+  .logout-btn span {
+    display: none;
+  }
+
+  .logout-btn {
+    width: 38px;
+    padding: 0;
   }
 }

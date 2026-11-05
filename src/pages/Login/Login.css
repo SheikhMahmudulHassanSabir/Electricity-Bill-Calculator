@@ -1,8 +1,8 @@
 .auth-page {
-  min-height: calc(100vh - 96px);
+  min-height: calc(100dvh - 110px);
   display: grid;
   place-items: center;
-  padding: 28px 0;
+  padding: 24px 0;
 }
 
 .auth-card {
@@ -36,7 +36,7 @@
 }
 
 .auth-brand h1 {
-  font-size: 1.45rem;
+  font-size: clamp(1.25rem, 4vw, 1.45rem);
   line-height: 1.2;
 }
 
@@ -52,7 +52,7 @@
 
 .auth-form {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .label-row {
@@ -60,6 +60,7 @@
   justify-content: space-between;
   align-items: baseline;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .forgot-link {
@@ -104,6 +105,14 @@
   justify-content: center;
   gap: 10px;
   font-weight: 600;
+  border: 1px solid var(--border-input);
+  background: var(--card);
+  color: var(--ink);
+}
+
+.auth-google-btn:hover:not([disabled]) {
+  background: var(--surface-subtle);
+  border-color: var(--ink-3);
 }
 
 .auth-switch {
@@ -124,7 +133,22 @@
 }
 
 @media (max-width: 520px) {
+  .auth-page {
+    min-height: auto;
+    padding: 12px 0 24px;
+  }
+
   .auth-card {
-    padding: 22px 18px;
+    padding: 20px 16px;
+  }
+
+  .auth-brand {
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .auth-mark {
+    width: 40px;
+    height: 40px;
   }
 }

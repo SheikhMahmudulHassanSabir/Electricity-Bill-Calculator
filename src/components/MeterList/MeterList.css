@@ -41,7 +41,15 @@
     padding-right: 14px;
   }
 
+  .add-actions .btn {
+    flex: 1 1 180px;
+  }
+
   .custom-meter-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .custom-meter-submit .btn {
+    width: 100%;
   }
 }

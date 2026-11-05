@@ -4,6 +4,7 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -14,10 +15,12 @@ body {
   padding-block: 0 48px;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
+  overflow-x: hidden;
 }
 
 .wrap {
   max-width: 1080px;
+  width: 100%;
   margin-inline: auto;
 }
 
@@ -59,6 +62,7 @@ button, input, select, textarea {
   border: 1px solid var(--line);
   border-radius: var(--r-card);
   box-shadow: var(--shadow);
+  min-width: 0;
 }
 
 .panel-head {
@@ -155,9 +159,10 @@ button, input, select, textarea {
 }
 
 .btn.icon {
-  width: 38px;
-  min-height: 38px;
+  width: 40px;
+  min-height: 40px;
   padding: 0;
+  flex-shrink: 0;
 }
 
 .btn[disabled] {
@@ -200,6 +205,7 @@ button, input, select, textarea {
 .input select {
   flex: 1;
   min-width: 0;
+  width: 100%;
   border: 0;
   background: transparent;
   padding: 10px 12px;
@@ -260,6 +266,7 @@ button, input, select, textarea {
   border-radius: var(--r-field);
   font-size: 0.9rem;
   line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .banner.ok {
@@ -279,6 +286,7 @@ button, input, select, textarea {
 
 .banner .ic {
   margin-top: 2px;
+  flex-shrink: 0;
 }
 
 /* Empty & Loading States */
@@ -304,10 +312,20 @@ button, input, select, textarea {
 }
 
 @media (max-width: 640px) {
+  body {
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
+    padding-bottom: 36px;
+  }
+
   .panel-head,
   .panel-body {
     padding-left: 14px;
     padding-right: 14px;
+  }
+
+  .btn {
+    min-height: 44px;
   }
 }
 

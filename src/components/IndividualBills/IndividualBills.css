@@ -1,6 +1,6 @@
 .bill-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 285px), 1fr));
   gap: 16px;
 }
 
@@ -36,7 +36,7 @@
 
 .dial {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: 8px;
   margin: 0 18px 12px;
@@ -102,6 +102,7 @@
   justify-content: space-between;
   align-items: baseline;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .pay span {
@@ -114,7 +115,7 @@
 
 .pay strong {
   font-family: var(--font-display);
-  font-size: 1.6rem;
+  font-size: clamp(1.35rem, 4.5vw, 1.6rem);
   color: var(--green-deep);
   font-variant-numeric: tabular-nums;
 }
@@ -129,4 +130,27 @@
   padding: 0 18px 20px;
   color: var(--ink-2);
   font-size: 0.9rem;
+}
+
+@media (max-width: 480px) {
+  .bill-top {
+    padding: 14px 14px 10px;
+  }
+
+  .dial {
+    margin: 0 14px 10px;
+    padding: 9px 10px;
+  }
+
+  .rows {
+    padding: 0 14px;
+  }
+
+  .pay {
+    padding: 12px 14px;
+  }
+
+  .waiting-body {
+    padding: 0 14px 16px;
+  }
 }

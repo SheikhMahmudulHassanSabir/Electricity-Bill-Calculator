@@ -5,14 +5,16 @@
 
 .table-scroll {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 0 20px 20px;
+  max-width: 100%;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
-  min-width: 580px;
+  min-width: 520px;
 }
 
 th {
@@ -43,7 +45,7 @@ td:first-child {
   font-family: var(--font-body);
   font-weight: 500;
   white-space: normal;
-  min-width: 110px;
+  min-width: 100px;
 }
 
 tfoot td {
@@ -60,11 +62,16 @@ td.total {
 
 @media (max-width: 640px) {
   .sect-title {
-    padding-left: 14px;
-    padding-right: 14px;
+    padding: 18px 14px 8px;
   }
 
   .table-scroll {
     padding: 0 14px 16px;
+  }
+
+  th,
+  td {
+    padding: 9px 8px;
+    font-size: 0.83rem;
   }
 }

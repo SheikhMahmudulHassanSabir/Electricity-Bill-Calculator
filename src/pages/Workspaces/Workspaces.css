@@ -4,7 +4,7 @@
 }
 
 .ws-page-intro h1 {
-  font-size: clamp(1.4rem, 3vw, 1.85rem);
+  font-size: clamp(1.35rem, 3vw, 1.85rem);
 }
 
 .ws-page-intro p {
@@ -27,7 +27,7 @@
 
 .ws-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
   gap: 14px;
 }
 
@@ -40,6 +40,7 @@
   flex-direction: column;
   justify-content: space-between;
   gap: 14px;
+  min-width: 0;
 }
 
 .ws-item-card.active {
@@ -52,10 +53,12 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .ws-item-top h3 {
   font-size: 1.1rem;
+  overflow-wrap: anywhere;
 }
 
 .ws-meta {
@@ -68,15 +71,28 @@
   font-family: var(--font-mono);
   font-size: 0.78rem;
   color: var(--ink-2);
+  white-space: nowrap;
 }
 
 .ws-item-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 @media (max-width: 780px) {
   .ws-forms-grid {
     grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+}
+
+@media (max-width: 520px) {
+  .ws-item-actions .btn {
+    flex: 1;
+  }
+
+  .ws-form .btn {
+    width: 100%;
   }
 }

@@ -24,6 +24,38 @@ export const supabase = isSupabaseConfigured
     })
   : null;
 
+let supabaseSchemaReady = null; // null = unknown, true = ready, false = missing tables
+
+export async function isSupabaseSchemaReady() {
+  if (!isSupabaseConfigured || !supabase) return false;
+  if (supabaseSchemaReady !== null) return supabaseSchemaReady;
+  try {
+    const { error } = await supabase.from('profiles').select('id').limit(1);
+    if (error && (error.code === 'PGRST205' || error.code === '42P01' || error.message?.includes('schema cache'))) {
+      supabaseSchemaReady = false;
+      return false;
+    }
+    supabaseSchemaReady = true;
+    return true;
+  } catch {
+    supabaseSchemaReady = false;
+    return false;
+  }
+}
+
+export async function hasActiveSupabaseSession() {
+  if (!isSupabaseConfigured || !supabase) return false;
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.user) return false;
+    return await isSupabaseSchemaReady();
+  } catch {
+    return false;
+  }
+}
+
 // 2. Provisioned Firebase Client
 const firebaseApp = initializeApp(firebaseConfig);
 export const db = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);

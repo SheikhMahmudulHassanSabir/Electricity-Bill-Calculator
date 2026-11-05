@@ -1,6 +1,6 @@
 import {
   supabase,
-  isSupabaseConfigured,
+  hasActiveSupabaseSession,
   readLocalDb,
   writeLocalDb,
   readLocalSession,
@@ -10,7 +10,7 @@ import {
 export async function fetchWorkspaceBills(workspaceId) {
   if (!workspaceId) return [];
 
-  if (isSupabaseConfigured) {
+  if (await hasActiveSupabaseSession()) {
     const { data, error } = await supabase
       .from('bills')
       .select(
@@ -123,7 +123,7 @@ export async function saveWorkspaceBill({
     throw new Error('Add at least one valid meter before saving.');
   }
 
-  if (isSupabaseConfigured) {
+  if (await hasActiveSupabaseSession()) {
     const { data: billRow, error: billErr } = await supabase
       .from('bills')
       .insert({
@@ -206,7 +206,7 @@ export async function saveWorkspaceBill({
 }
 
 export async function deleteWorkspaceBill({ billId, workspaceId }) {
-  if (isSupabaseConfigured) {
+  if (await hasActiveSupabaseSession()) {
     const { error } = await supabase.from('bills').delete().eq('id', billId);
     if (error) throw new Error(error.message);
     return;

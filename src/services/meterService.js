@@ -1,6 +1,6 @@
 import {
   supabase,
-  isSupabaseConfigured,
+  hasActiveSupabaseSession,
   readLocalDb,
   writeLocalDb,
   generateUuid,
@@ -13,7 +13,7 @@ import {
 export async function fetchWorkspaceMetersWithLatest(workspaceId) {
   if (!workspaceId) return [];
 
-  if (isSupabaseConfigured) {
+  if (await hasActiveSupabaseSession()) {
     const { data: meters, error: mErr } = await supabase
       .from('meters')
       .select('*')
@@ -117,7 +117,7 @@ export async function createMeter({
     hasInitial = true;
   }
 
-  if (isSupabaseConfigured) {
+  if (await hasActiveSupabaseSession()) {
     const { data, error } = await supabase
       .from('meters')
       .insert({
@@ -183,7 +183,7 @@ export async function updateMeter({ meterId, name, initialReading }) {
     }
   }
 
-  if (isSupabaseConfigured) {
+  if (await hasActiveSupabaseSession()) {
     const { data, error } = await supabase
       .from('meters')
       .update(updates)
@@ -217,7 +217,7 @@ export async function updateMeter({ meterId, name, initialReading }) {
  * Soft-deletes a meter by setting is_active = false so saved bill history remains intact.
  */
 export async function softDeleteMeter(meterId) {
-  if (isSupabaseConfigured) {
+  if (await hasActiveSupabaseSession()) {
     const { data, error } = await supabase
       .from('meters')
       .update({ is_active: false })

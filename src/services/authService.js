@@ -1,6 +1,7 @@
 import {
   supabase,
   isSupabaseConfigured,
+  isSupabaseSchemaReady,
   auth,
   googleProvider,
   readLocalDb,
@@ -100,56 +101,71 @@ export function isIncomingEmailSignInLink(url) {
 
 export async function getCurrentUser() {
   if (isSupabaseConfigured) {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session?.user) return null;
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.user) {
+        let profileName = '';
+        if (await isSupabaseSchemaReady()) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('id, full_name, created_at')
+            .eq('id', session.user.id)
+            .maybeSingle();
+          profileName = profile?.full_name || '';
+        }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, full_name, created_at')
-      .eq('id', session.user.id)
-      .maybeSingle();
-
-    return {
-      id: session.user.id,
-      email: session.user.email,
-      full_name:
-        profile?.full_name ||
-        session.user.user_metadata?.full_name ||
-        session.user.email?.split('@')[0] ||
-        'User',
-    };
+        return {
+          id: session.user.id,
+          email: session.user.email,
+          full_name:
+            profileName ||
+            session.user.user_metadata?.full_name ||
+            session.user.email?.split('@')[0] ||
+            'User',
+        };
+      }
+    } catch {
+      // Fall back to local/Firebase session
+    }
   }
 
   return readLocalSession();
 }
 
 export function onAuthStateChange(callback) {
+  let sbUnsubscribe = null;
+
   if (isSupabaseConfigured) {
     const { data } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!session?.user) {
-        callback(null);
+        const localUser = readLocalSession();
+        callback(localUser || null);
         return;
       }
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .eq('id', session.user.id)
-        .maybeSingle();
+      let profileName = '';
+      if (await isSupabaseSchemaReady()) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .eq('id', session.user.id)
+          .maybeSingle();
+        profileName = profile?.full_name || '';
+      }
 
       callback({
         id: session.user.id,
         email: session.user.email,
         full_name:
-          profile?.full_name ||
+          profileName ||
           session.user.user_metadata?.full_name ||
           session.user.email?.split('@')[0] ||
           'User',
       });
     });
 
-    return () => {
+    sbUnsubscribe = () => {
       data.subscription.unsubscribe();
     };
   }
@@ -157,6 +173,7 @@ export function onAuthStateChange(callback) {
   authListeners.add(callback);
   return () => {
     authListeners.delete(callback);
+    if (sbUnsubscribe) sbUnsubscribe();
   };
 }
 
@@ -173,66 +190,62 @@ export async function registerWithEmail({ fullName, email, password }) {
     throw new Error('Password must be at least 6 characters.');
   }
 
-  if (isSupabaseConfigured) {
-    const { data, error } = await supabase.auth.signUp({
-      email: cleanEmail,
-      password: cleanPass,
-      options: {
-        data: { full_name: cleanName },
-      },
-    });
-    if (error) throw new Error(error.message);
-
-    if (data.user) {
-      await supabase.from('profiles').upsert(
-        {
-          id: data.user.id,
-          full_name: cleanName,
-        },
-        { onConflict: 'id' }
-      );
-    }
-
-    return {
-      id: data.user?.id,
-      email: cleanEmail,
-      full_name: cleanName,
-      needsEmailConfirmation: Boolean(data.user && !data.session),
-    };
+  const db = readLocalDb();
+  const existingLocal = db.users.find((u) => u.email.toLowerCase() === cleanEmail);
+  if (existingLocal) {
+    throw new Error('An account with this email already exists. Please log in instead.');
   }
 
-  // Try Firebase Auth Email/Password registration first, with local collaborative fallback
+  let resolvedUserId = null;
+
+  // 1. Try Firebase Auth registration
   try {
     const credential = await createUserWithEmailAndPassword(auth, cleanEmail, cleanPass);
+    resolvedUserId = credential.user.uid;
     try {
       await updateProfile(credential.user, { displayName: cleanName });
     } catch {
       // Ignore displayName update error
     }
-    return syncLocalProfile({
-      id: credential.user.uid,
-      email: cleanEmail,
-      fullName: cleanName,
-    });
   } catch (fbErr) {
     if (fbErr?.code === 'auth/email-already-in-use') {
       throw new Error('An account with this email already exists. Please log in instead.');
     }
-    if (fbErr?.code === 'auth/invalid-email') {
-      throw new Error('Enter a valid email address.');
-    }
-    if (fbErr?.code === 'auth/weak-password') {
-      throw new Error('Password must be at least 6 characters.');
+  }
+
+  // 2. If Supabase is configured, also register in Supabase Auth when possible
+  if (isSupabaseConfigured) {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: cleanEmail,
+        password: cleanPass,
+        options: {
+          data: { full_name: cleanName },
+        },
+      });
+      if (error && error.message?.toLowerCase().includes('already registered')) {
+        throw new Error('An account with this email already exists. Please log in instead.');
+      }
+      if (data?.user?.id) {
+        resolvedUserId = data.user.id;
+        if (data.session && (await isSupabaseSchemaReady())) {
+          await supabase.from('profiles').upsert(
+            {
+              id: data.user.id,
+              full_name: cleanName,
+            },
+            { onConflict: 'id' }
+          );
+        }
+      }
+    } catch (sbErr) {
+      if (sbErr.message?.includes('already exists')) {
+        throw sbErr;
+      }
     }
   }
 
-  const db = readLocalDb();
-  const existing = db.users.find((u) => u.email.toLowerCase() === cleanEmail);
-  if (existing) {
-    throw new Error('An account with this email already exists. Please log in instead.');
-  }
-
-  const newId = generateUuid();
+  const newId = resolvedUserId || generateUuid();
   const now = new Date().toISOString();
   const userRecord = {
     id: newId,
@@ -248,7 +261,9 @@ export async function registerWithEmail({ fullName, email, password }) {
   };
 
   db.users.push(userRecord);
-  db.profiles.push(profileRecord);
+  if (!db.profiles.some((p) => p.id === newId)) {
+    db.profiles.push(profileRecord);
+  }
   writeLocalDb(db, { table: 'profiles', type: 'INSERT' });
 
   const sessionUser = {
@@ -272,30 +287,7 @@ export async function loginWithEmail({ email, password }) {
     throw new Error('Enter your password.');
   }
 
-  if (isSupabaseConfigured) {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: cleanEmail,
-      password: cleanPass,
-    });
-    if (error) throw new Error(error.message);
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, full_name')
-      .eq('id', data.user.id)
-      .maybeSingle();
-
-    return {
-      id: data.user.id,
-      email: data.user.email,
-      full_name:
-        profile?.full_name ||
-        data.user.user_metadata?.full_name ||
-        cleanEmail.split('@')[0],
-    };
-  }
-
-  // Check local collaborative store first if user registered locally
+  // 1. Check local collaborative store first
   const db = readLocalDb();
   const userByEmail = db.users.find((u) => u.email.toLowerCase() === cleanEmail);
   if (userByEmail) {
@@ -314,7 +306,7 @@ export async function loginWithEmail({ email, password }) {
     return sessionUser;
   }
 
-  // Otherwise authenticate via Firebase Auth Email/Password
+  // 2. Try Firebase Auth Email/Password
   try {
     const credential = await signInWithEmailAndPassword(auth, cleanEmail, cleanPass);
     const fbUser = credential.user;
@@ -324,19 +316,41 @@ export async function loginWithEmail({ email, password }) {
       fullName: fbUser.displayName || '',
     });
   } catch (fbErr) {
-    if (
-      fbErr?.code === 'auth/invalid-credential' ||
-      fbErr?.code === 'auth/wrong-password' ||
-      fbErr?.code === 'auth/user-not-found'
-    ) {
-      throw new Error(
-        'Invalid email or password. If you do not have an account yet, please create one or sign in with an email link.'
-      );
+    if (fbErr?.code === 'auth/wrong-password') {
+      throw new Error('Incorrect password. Please try again.');
+    }
+  }
+
+  // 3. Try Supabase Auth Email/Password if configured
+  if (isSupabaseConfigured) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: cleanEmail,
+      password: cleanPass,
+    });
+    if (!error && data?.user) {
+      let profileName = '';
+      if (await isSupabaseSchemaReady()) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .eq('id', data.user.id)
+          .maybeSingle();
+        profileName = profile?.full_name || '';
+      }
+
+      return syncLocalProfile({
+        id: data.user.id,
+        email: data.user.email,
+        fullName:
+          profileName ||
+          data.user.user_metadata?.full_name ||
+          cleanEmail.split('@')[0],
+      });
     }
   }
 
   throw new Error(
-    'No account found with this email address. Please click "Create an account" below to register first.'
+    'No account found with this email address or incorrect password. Please check your credentials or create an account.'
   );
 }
 
@@ -465,22 +479,59 @@ export async function completeEmailSignInLink({ email, fullName = '', url } = {}
 }
 
 export async function loginWithGooglePopup() {
-  if (isSupabaseConfigured) {
-    const redirectTo =
-      typeof window !== 'undefined' ? `${window.location.origin}/calculator` : undefined;
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo },
-    });
-    if (error) throw new Error(error.message);
-    return null;
-  }
-
   try {
     const result = await signInWithPopup(auth, googleProvider);
     const fbUser = result.user;
     const fullName = fbUser.displayName || fbUser.email?.split('@')[0] || 'User';
     const email = (fbUser.email || '').toLowerCase();
+
+    // If Supabase is configured, bridge the verified Firebase Google user into a Supabase session
+    if (isSupabaseConfigured && email) {
+      try {
+        const derivedPassword = `FbGoogle!${fbUser.uid.slice(0, 16)}#Ebc26`;
+        let sbSessionUser = null;
+
+        const { data: signInData, error: signInErr } =
+          await supabase.auth.signInWithPassword({
+            email,
+            password: derivedPassword,
+          });
+
+        if (!signInErr && signInData?.session?.user) {
+          sbSessionUser = signInData.session.user;
+        } else {
+          const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
+            email,
+            password: derivedPassword,
+            options: {
+              data: { full_name: fullName },
+            },
+          });
+          if (!signUpErr && signUpData?.session?.user) {
+            sbSessionUser = signUpData.session.user;
+          }
+        }
+
+        if (sbSessionUser) {
+          await supabase.from('profiles').upsert(
+            {
+              id: sbSessionUser.id,
+              full_name: fullName,
+            },
+            { onConflict: 'id' }
+          );
+
+          return syncLocalProfile({
+            id: sbSessionUser.id,
+            email,
+            fullName,
+          });
+        }
+      } catch {
+        // Fall through to local/Firebase profile session if Supabase bridge is unavailable
+      }
+    }
+
     return syncLocalProfile({
       id: fbUser.uid,
       email,
@@ -533,9 +584,11 @@ export async function sendPasswordReset({ email }) {
 
 export async function logoutUser() {
   if (isSupabaseConfigured) {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw new Error(error.message);
-    return;
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // Ignore Supabase sign-out errors
+    }
   }
 
   try {

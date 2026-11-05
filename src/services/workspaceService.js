@@ -1,6 +1,6 @@
 import {
   supabase,
-  isSupabaseConfigured,
+  hasActiveSupabaseSession,
   readLocalDb,
   writeLocalDb,
   readLocalSession,
@@ -11,7 +11,7 @@ import {
 export async function fetchUserWorkspaces(userId) {
   if (!userId) return [];
 
-  if (isSupabaseConfigured) {
+  if (await hasActiveSupabaseSession()) {
     const { data, error } = await supabase
       .from('workspace_members')
       .select(
@@ -72,7 +72,7 @@ export async function createWorkspace({ name, ratePerUnit = null, userId }) {
     parsedRate = r;
   }
 
-  if (isSupabaseConfigured) {
+  if (await hasActiveSupabaseSession()) {
     const inviteCode = generateInviteCode();
     const { data, error } = await supabase
       .from('workspaces')
@@ -159,7 +159,7 @@ export async function joinWorkspaceByCode({ inviteCode, userId }) {
     throw new Error('Enter an invite code to join a workspace.');
   }
 
-  if (isSupabaseConfigured) {
+  if (await hasActiveSupabaseSession()) {
     const { data: workspaceId, error } = await supabase.rpc('join_workspace', {
       p_invite_code: cleanCode,
     });
@@ -219,7 +219,7 @@ export async function updateWorkspaceRate({ workspaceId, ratePerUnit }) {
     numericRate = n;
   }
 
-  if (isSupabaseConfigured) {
+  if (await hasActiveSupabaseSession()) {
     const { data, error } = await supabase
       .from('workspaces')
       .update({ rate_per_unit: numericRate })
@@ -250,7 +250,7 @@ export async function updateWorkspaceRate({ workspaceId, ratePerUnit }) {
 }
 
 export async function regenerateWorkspaceInviteCode({ workspaceId, userId }) {
-  if (isSupabaseConfigured) {
+  if (await hasActiveSupabaseSession()) {
     const { data: newCode, error } = await supabase.rpc('regenerate_invite_code', {
       p_workspace_id: workspaceId,
     });
@@ -287,7 +287,7 @@ export async function regenerateWorkspaceInviteCode({ workspaceId, userId }) {
 export async function fetchWorkspaceMembers(workspaceId) {
   if (!workspaceId) return [];
 
-  if (isSupabaseConfigured) {
+  if (await hasActiveSupabaseSession()) {
     const { data, error } = await supabase
       .from('workspace_members')
       .select(
@@ -334,7 +334,7 @@ export async function fetchWorkspaceMembers(workspaceId) {
 }
 
 export async function removeWorkspaceMember({ workspaceId, targetUserId, requesterId }) {
-  if (isSupabaseConfigured) {
+  if (await hasActiveSupabaseSession()) {
     const { error } = await supabase
       .from('workspace_members')
       .delete()
@@ -372,7 +372,7 @@ export async function removeWorkspaceMember({ workspaceId, targetUserId, request
 }
 
 export async function deleteWorkspace({ workspaceId, requesterId }) {
-  if (isSupabaseConfigured) {
+  if (await hasActiveSupabaseSession()) {
     const { error } = await supabase
       .from('workspaces')
       .delete()

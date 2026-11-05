@@ -2,13 +2,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px 16px;
   margin-bottom: 20px;
   flex-wrap: wrap;
 }
 
 .calc-subheader h1 {
-  font-size: clamp(1.4rem, 3.2vw, 1.85rem);
+  font-size: clamp(1.35rem, 3.2vw, 1.85rem);
   line-height: 1.15;
 }
 
@@ -71,7 +71,7 @@
 
 .controls .grow {
   flex: 1;
-  min-width: 240px;
+  min-width: min(100%, 240px);
   display: grid;
   gap: 8px;
 }
@@ -99,6 +99,7 @@
   margin: 0;
   color: var(--ink-2);
   font-size: 0.88rem;
+  overflow-wrap: anywhere;
 }
 
 .foot code {
@@ -118,6 +119,7 @@
 @media (max-width: 900px) {
   .layout {
     grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
   }
 
   #rateCard {
@@ -130,17 +132,44 @@
 }
 
 @media (max-width: 640px) {
-  .controls {
-    padding-left: 14px;
-    padding-right: 14px;
+  .calc-subheader {
+    margin-bottom: 14px;
   }
 
-  .bill-date-field,
+  .controls {
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .bill-date-field {
+    width: 100%;
+    min-width: 0;
+  }
+
   .control-buttons {
     width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
   }
 
-  .control-buttons .btn {
-    flex: 1;
+  .control-buttons .btn:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .controls .grow {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .foot {
+    margin-top: 20px;
+    padding: 14px;
+  }
+}
+
+@media (max-width: 380px) {
+  .control-buttons {
+    grid-template-columns: 1fr;
   }
 }
