@@ -1,12 +1,12 @@
 {
-  "projectId": "gen-lang-client-0505193298",
-  "appId": "1:1059385145566:web:39effbc446d3f688b2ea4f",
-  "apiKey": "AIzaSyDyJ-LSl4st_2piLgWnIQGR0NAd9D4ujGk",
-  "authDomain": "gen-lang-client-0505193298.firebaseapp.com",
+  "projectId": "electricity-bill-calcula-d2b3c",
+  "appId": "1:622717838642:web:7c6a575a17f3395202e32b",
+  "apiKey": "AIzaSyCfh-7VKu8gGUiU_cq6iMF8wbvhl2P8wcI",
+  "authDomain": "electricity-bill-calcula-d2b3c.firebaseapp.com",
   "firestoreDatabaseId": "ai-studio-electricitybillc-d7b1c7e3-b60c-428d-bb21-1947ca21f285",
-  "storageBucket": "gen-lang-client-0505193298.firebasestorage.app",
-  "messagingSenderId": "1059385145566",
+  "storageBucket": "electricity-bill-calcula-d2b3c.firebasestorage.app",
+  "messagingSenderId": "622717838642",
   "measurementId": "",
-  "oAuthClientId": "1059385145566-jhlhcv8p557mtdngl0o32e4r1enjdd8o.apps.googleusercontent.com",
+  "oAuthClientId": "622717838642-06rs7a3015f7aafnmig3phee48vbsd9v.apps.googleusercontent.com",
   "recaptchaSiteKey": ""
 }

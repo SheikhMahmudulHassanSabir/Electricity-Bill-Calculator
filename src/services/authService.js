@@ -190,14 +190,17 @@ export async function loginWithEmail({ email, password }) {
   }
 
   const db = readLocalDb();
-  const match = db.users.find(
-    (u) => u.email.toLowerCase() === cleanEmail && u.password === cleanPass
-  );
-
-  if (!match) {
-    throw new Error('Invalid email or password. Please check your credentials.');
+  const userByEmail = db.users.find((u) => u.email.toLowerCase() === cleanEmail);
+  if (!userByEmail) {
+    throw new Error(
+      'No account found with this email address. Please click "Create an account" below to register first.'
+    );
+  }
+  if (userByEmail.password !== cleanPass) {
+    throw new Error('Incorrect password. Please try again.');
   }
 
+  const match = userByEmail;
   const profile = db.profiles.find((p) => p.id === match.id);
   const sessionUser = {
     id: match.id,
@@ -211,32 +214,41 @@ export async function loginWithEmail({ email, password }) {
 }
 
 export async function loginWithGooglePopup() {
-  const result = await signInWithPopup(auth, googleProvider);
-  const fbUser = result.user;
-  const fullName = fbUser.displayName || fbUser.email?.split('@')[0] || 'User';
-  const email = (fbUser.email || '').toLowerCase();
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    const fbUser = result.user;
+    const fullName = fbUser.displayName || fbUser.email?.split('@')[0] || 'User';
+    const email = (fbUser.email || '').toLowerCase();
 
-  const db = readLocalDb();
-  const now = new Date().toISOString();
-  let profile = db.profiles.find((p) => p.id === fbUser.uid);
-  if (!profile) {
-    profile = {
+    const db = readLocalDb();
+    const now = new Date().toISOString();
+    let profile = db.profiles.find((p) => p.id === fbUser.uid);
+    if (!profile) {
+      profile = {
+        id: fbUser.uid,
+        full_name: fullName,
+        created_at: now,
+      };
+      db.profiles.push(profile);
+      writeLocalDb(db, { table: 'profiles', type: 'INSERT' });
+    }
+
+    const sessionUser = {
       id: fbUser.uid,
-      full_name: fullName,
-      created_at: now,
+      email,
+      full_name: profile.full_name,
     };
-    db.profiles.push(profile);
-    writeLocalDb(db, { table: 'profiles', type: 'INSERT' });
+    writeLocalSession(sessionUser);
+    notifyAuthChange(sessionUser);
+    return sessionUser;
+  } catch (err) {
+    if (err?.code === 'auth/unauthorized-domain') {
+      throw new Error(
+        'Google popup sign-in is not authorized on this preview domain. Please log in or register with your email and password.'
+      );
+    }
+    throw err;
   }
-
-  const sessionUser = {
-    id: fbUser.uid,
-    email,
-    full_name: profile.full_name,
-  };
-  writeLocalSession(sessionUser);
-  notifyAuthChange(sessionUser);
-  return sessionUser;
 }
 
 export async function sendPasswordReset({ email }) {
